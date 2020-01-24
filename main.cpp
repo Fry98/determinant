@@ -8,6 +8,6 @@ int main() {
   mtx.add(3);
   mtx.add(12);
   mtx.setWidth(2);
-  std::cout << mtx.get(2, 0) << "\n";
+  std::cout << mtx.isSquare() << "\n";
   return 0;
 }

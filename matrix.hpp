@@ -2,11 +2,11 @@
 
 class Matrix {
   private:
-    std::vector<int> list;
-    int width;
+    std::vector<double> list;
+    unsigned int width;
   public:
-    void add(int number);
-    void setWidth(int width);
+    void add(double number);
+    void setWidth(unsigned int width);
     bool isSquare();
-    int get(int x, int y);
+    double get(unsigned int x, unsigned int y);
 };
