@@ -8,6 +8,7 @@ class Matrix {
     unsigned int width;
   public:
     void add(double number);
+    void set(unsigned int x, unsigned int y, double value);
     void setWidth(unsigned int width);
     bool isSquare();
     double get(unsigned int x, unsigned int y);

@@ -51,14 +51,16 @@ void fillFromFile(Matrix& mtx, const char* name) {
 int main(int argc, char* argv[]) {
   try {
     Matrix mtx;
-    if (argc < 2) {
-      fillFromStd(mtx);
-    } else {
-      fillFromFile(mtx, argv[1]);
-    }
+    // if (argc < 2) {
+    //   fillFromStd(mtx);
+    // } else {
+    //   fillFromFile(mtx, argv[1]);
+    // }
+    fillFromFile(mtx, "input.txt");
 
     if (!mtx.isSquare()) throw std::exception("Invalid matrix size");
-    std::cout << "Matrix:\n" << mtx << "\nDeterminant:\n" << mtx.getDeterminant() << "\n";
+    std::cout << "Matrix:\n" << mtx;
+    std::cout << "\nDeterminant:\n" << mtx.getDeterminant() << "\n";
   } catch(const std::exception& e) {
     std::cerr << e.what() << "\n";
   }
