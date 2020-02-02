@@ -3,6 +3,7 @@
 #include <fstream>
 #include <future>
 #include <chrono>
+#include <cstring>
 #include "matrix.hpp"
 
 template <typename TimePoint>
@@ -33,7 +34,7 @@ void parse_line(Matrix& mtx, const std::string& line, int& line_length) {
   if (line_length == -1) {
     line_length = current_length;
   } else if (line_length != current_length && current_length != 0) {
-    throw std::exception("Invalid matrix size");
+    throw std::runtime_error("Invalid matrix size");
   }
 }
 
@@ -44,7 +45,7 @@ long double matrix_from_std() {
 
   while (std::getline(std::cin, line)) parse_line(mtx, line, line_length);
   mtx.setWidth(line_length);
-  if (!mtx.isSquare()) throw std::exception("Invalid matrix size");
+  if (!mtx.isSquare()) throw std::runtime_error("Invalid matrix size");
   return mtx.getDeterminant();
 }
 
@@ -55,32 +56,32 @@ long double matrix_from_file(const std::string name) {
   int line_length = -1;
 
   file.open(name);
-  if (!file.is_open()) throw std::exception("File not found");
+  if (!file.is_open()) throw std::runtime_error("File not found");
   while (std::getline(file, line)) parse_line(mtx, line, line_length);
   mtx.setWidth(line_length);
   file.close();
-  if (!mtx.isSquare()) throw std::exception("Invalid matrix size");
+  if (!mtx.isSquare()) throw std::runtime_error("Invalid matrix size");
   return mtx.getDeterminant();
 }
 
 void print_help() {
   std::cout <<
-    "(--input | -i) <filename1>;<filename2>;...  <- List of input files containing matrices (If none are specified, the program will be expecting input from std)\n"
-    "(--output | -o) <filename>  <- Filename of the file where you want the results to be saved (If not provided, the results will be written into std)\n"
+    "(--input | -i) <filename1>;<filename2>;...  <- List of input files containing matrices (If none are specified, the program will be expecting input from stdin)\n"
+    "(--output | -o) <filename>  <- Filename of the file where you want the results to be saved (If not provided, the results will be written into stdout)\n"
     "--no-index | -ni  <- Outputs only the results without prefixing the index"
     "--single-thread | -st  <- Forces program to run on a single thread\n"
     "--perf-comp | -pc  <- Runs the computations in both multi-threaded and single-threaded mode and compares the preformance\n"
     "--help  <- Prints the list of valid commands\n";
 }
 
-int main(unsigned int argc, char* argv[]) {
+int main(int argc, char* argv[]) {
   bool res_only = false;
   unsigned char thread_mode = 0;
   char* inp = nullptr;
   char* out = nullptr;
 
   try {
-    for (unsigned int i = 1; i < argc; i++) {
+    for (int i = 1; i < argc; i++) {
       if (strcmp(argv[i], "--no-index") == 0 || strcmp(argv[i], "-ni") == 0) {
         res_only = true;
       } else if (strcmp(argv[i], "--single-thread") == 0 || strcmp(argv[i], "-st") == 0) {
@@ -88,10 +89,10 @@ int main(unsigned int argc, char* argv[]) {
       } else if (strcmp(argv[i], "--perf-comp") == 0 || strcmp(argv[i], "-pc") == 0) {
         thread_mode = 2;
       } else if (strcmp(argv[i], "--input") == 0 || strcmp(argv[i], "-i") == 0) {
-        if (i + 1 >= argc) throw std::exception("Input flag requires path argument");
+        if (i + 1 >= argc) throw std::runtime_error("Input flag requires path argument");
         inp = argv[++i];
       } else if (strcmp(argv[i], "--output") == 0 || strcmp(argv[i], "-o") == 0) {
-        if (i + 1 >= argc) throw std::exception("Output flag requires path argument");
+        if (i + 1 >= argc) throw std::runtime_error("Output flag requires path argument");
         out = argv[++i];
       } else if (strcmp(argv[i], "--help") == 0) {
         print_help();
@@ -100,7 +101,7 @@ int main(unsigned int argc, char* argv[]) {
         throw std::runtime_error("Invalid argument: \"" + std::string(argv[i]) + "\"");
       }
     }
-  } catch (const std::exception& e) {
+  } catch (const std::runtime_error& e) {
     std::cerr << e.what() << "\nHere is the list of valid commands:\n";
     print_help();
     return 0;
@@ -113,17 +114,16 @@ int main(unsigned int argc, char* argv[]) {
 
     if (out != nullptr) {
       outfile.open(out, std::ios_base::trunc);
-      if (!outfile.is_open()) throw std::exception("Invalid filename");
+      if (!outfile.is_open()) throw std::runtime_error("Invalid filename");
       outs = &outfile;
       errs = &outfile;
     }
 
     if (inp == nullptr) {
       long double det = matrix_from_std();
-      if (thread_mode != 2) {
-        if (!res_only) *outs << "(1) ";
-        *outs << det;
-      } else {
+      if (!res_only) *outs << "(1) ";
+      *outs << det;
+      if (thread_mode == 2) {
         *errs << "Performance comparison not available for std input of a single matrix\n";
       }
     } else {
@@ -138,7 +138,7 @@ int main(unsigned int argc, char* argv[]) {
           if (inp[i] != 59) {
             filename += inp[i];
           } else {
-            if (filename.size() == 0) throw std::exception("Invalid filename");
+            if (filename.size() == 0) throw std::runtime_error("Invalid filename");
             futures.push_back(std::async(&matrix_from_file, filename));
             filename = "";
           }
@@ -153,7 +153,7 @@ int main(unsigned int argc, char* argv[]) {
           try {
             long double res = futures[i].get();
             *outs << res << "\n";
-          } catch (const std::exception& e) {
+          } catch (const std::runtime_error& e) {
             *errs << e.what() << "\n";
           }
         }
@@ -168,12 +168,12 @@ int main(unsigned int argc, char* argv[]) {
           if (inp[i] != 59) {
             filename += inp[i];
           } else {
-            if (filename.size() == 0) throw std::exception("Invalid filename");
+            if (filename.size() == 0) throw std::runtime_error("Invalid filename");
             if (!res_only && thread_mode != 2) *outs << "(" << ++count << ") ";
             try {
               long double res = matrix_from_file(filename);
               if (thread_mode != 2) *outs << res << "\n";
-            } catch (const std::exception& e) {
+            } catch (const std::runtime_error& e) {
               if (thread_mode != 2) *errs << e.what() << "\n";
             }
             filename = "";
@@ -185,7 +185,7 @@ int main(unsigned int argc, char* argv[]) {
           try {
             long double res = matrix_from_file(filename);
             if (thread_mode != 2) *outs << res << "\n";
-          } catch (const std::exception& e) {
+          } catch (const std::runtime_error& e) {
             if (thread_mode != 2) *errs << e.what() << "\n";
           }
         }
@@ -200,7 +200,7 @@ int main(unsigned int argc, char* argv[]) {
 
       outfile.close();
     }
-  } catch(const std::exception& e) {
+  } catch(const std::runtime_error& e) {
     std::cerr << e.what() << "\n";
   }
 }
