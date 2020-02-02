@@ -67,7 +67,7 @@ void print_help() {
   std::cout <<
     "(--input | -i) <filename1>;<filename2>;...  <- List of input files containing matrices (If none are specified, the program will be expecting input from std)\n"
     "(--output | -o) <filename>  <- Filename of the file where you want the results to be saved (If not provided, the results will be written into std)\n"
-    "--result-only | -ro  <- Outputs only the results without prefixing the index"
+    "--no-index | -ni  <- Outputs only the results without prefixing the index"
     "--single-thread | -st  <- Forces program to run on a single thread\n"
     "--perf-comp | -pc  <- Runs the computations in both multi-threaded and single-threaded mode and compares the preformance\n"
     "--help  <- Prints the list of valid commands\n";
@@ -81,7 +81,7 @@ int main(unsigned int argc, char* argv[]) {
 
   try {
     for (unsigned int i = 1; i < argc; i++) {
-      if (strcmp(argv[i], "--result-only") == 0 || strcmp(argv[i], "-ro") == 0) {
+      if (strcmp(argv[i], "--no-index") == 0 || strcmp(argv[i], "-ni") == 0) {
         res_only = true;
       } else if (strcmp(argv[i], "--single-thread") == 0 || strcmp(argv[i], "-st") == 0) {
         if (thread_mode == 0) thread_mode = 1;
