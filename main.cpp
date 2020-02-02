@@ -15,7 +15,7 @@ void parse_line(Matrix& mtx, const std::string& line, int& line_length) {
   std::string block = "";
 
   for (const char& ch : line) {
-    if (ch == 45 || (ch > 47 && ch < 58)) {
+    if (ch == 45 || ch == 46 || (ch > 47 && ch < 58)) {
       block += ch;
     } else if (block != "") {
       mtx.add(std::stod(block));
