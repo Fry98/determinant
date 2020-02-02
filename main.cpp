@@ -2,7 +2,13 @@
 #include <string>
 #include <fstream>
 #include <future>
+#include <chrono>
 #include "matrix.hpp"
+
+template <typename TimePoint>
+std::chrono::milliseconds get_milis(TimePoint point) {
+  return std::chrono::duration_cast<std::chrono::milliseconds>(point);
+}
 
 void parse_line(Matrix& mtx, const std::string& line, int& line_length) {
   int current_length = 0;
@@ -17,11 +23,13 @@ void parse_line(Matrix& mtx, const std::string& line, int& line_length) {
       current_length++;
     }
   }
+
   if (block != "") {
     mtx.add(std::stod(block));
     block = "";
     current_length++;
   }
+
   if (line_length == -1) {
     line_length = current_length;
   } else if (line_length != current_length && current_length != 0) {
@@ -102,41 +110,95 @@ int main(unsigned int argc, char* argv[]) {
     std::ostream* outs = &std::cout;
     std::ostream* errs = &std::cerr;
     std::ofstream outfile;
+
     if (out != nullptr) {
       outfile.open(out, std::ios_base::trunc);
       if (!outfile.is_open()) throw std::exception("Invalid filename");
       outs = &outfile;
       errs = &outfile;
     }
+
     if (inp == nullptr) {
       double det = matrix_from_std();
-      if (!res_only) *outs << "(1) ";
-      *outs << det;
+      if (thread_mode != 2) {
+        if (!res_only) *outs << "(1) ";
+        *outs << det;
+      } else {
+        *errs << "Performance comparison not available for std input of a single matrix\n";
+      }
     } else {
       std::string filename = "";
       std::vector<std::future<double>> futures;
-      for (unsigned int i = 0; inp[i] != 0; i++) {
-        if (inp[i] != 59) {
-          filename += inp[i];
-        } else {
-          if (filename.size() == 0) throw std::exception("Invalid filename");
+      long long multi_time;
+      long long single_time;
+
+      if (thread_mode != 1) {
+        auto start = std::chrono::high_resolution_clock::now();
+        for (unsigned int i = 0; inp[i] != 0; i++) {
+          if (inp[i] != 59) {
+            filename += inp[i];
+          } else {
+            if (filename.size() == 0) throw std::exception("Invalid filename");
+            futures.push_back(std::async(&matrix_from_file, filename));
+            filename = "";
+          }
+        }
+
+        if (filename.size() != 0) {
           futures.push_back(std::async(&matrix_from_file, filename));
-          filename = "";
         }
-      }
-      if (filename.size() != 0) {
-        futures.push_back(std::async(&matrix_from_file, filename));
-      }
-      for (unsigned int i = 0; i < futures.size(); i++) {
-        if (!res_only) *outs << "(" << i + 1 << ") ";
-        try {
-          *outs << futures[i].get() << "\n";
-        } catch (const std::exception& e) {
-          *errs << e.what() << "\n";
+
+        for (unsigned int i = 0; i < futures.size(); i++) {
+          if (!res_only && thread_mode != 2) *outs << "(" << i + 1 << ") ";
+          try {
+            double res = futures[i].get();
+            if (thread_mode != 2) *outs << res << "\n";
+          } catch (const std::exception& e) {
+            if (thread_mode != 2) *errs << e.what() << "\n";
+          }
         }
+        multi_time = get_milis(std::chrono::high_resolution_clock::now() - start).count();
       }
+
+      if (thread_mode != 0) {
+        auto start = std::chrono::high_resolution_clock::now();
+        filename = "";
+        unsigned int count = 0;
+        for (unsigned i = 0; inp[i] != 0; i++) {
+          if (inp[i] != 59) {
+            filename += inp[i];
+          } else {
+            if (filename.size() == 0) throw std::exception("Invalid filename");
+            if (!res_only && thread_mode != 2) *outs << "(" << ++count << ") ";
+            try {
+              double res = matrix_from_file(filename);
+              if (thread_mode != 2) *outs << res << "\n";
+            } catch (const std::exception& e) {
+              if (thread_mode != 2) *errs << e.what() << "\n";
+            }
+            filename = "";
+          }
+        }
+
+        if (filename.size() != 0) {
+          if (!res_only && thread_mode != 2) *outs << "(" << ++count << ") ";
+          try {
+            double res = matrix_from_file(filename);
+            if (thread_mode != 2) *outs << res << "\n";
+          } catch (const std::exception& e) {
+            if (thread_mode != 2) *errs << e.what() << "\n";
+          }
+        }
+        single_time = get_milis(std::chrono::high_resolution_clock::now() - start).count();
+      }
+
+      if (thread_mode == 2) {
+        *outs << "Multi-threaded: " << multi_time << " ms\n";
+        *outs << "Single-threaded: " << single_time << " ms\n";
+      }
+
+      outfile.close();
     }
-    if (out != nullptr) outfile.close();
   } catch(const std::exception& e) {
     std::cerr << e.what() << "\n";
   }
