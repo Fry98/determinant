@@ -25,21 +25,24 @@ void Matrix::set(unsigned int x, unsigned int y, double value) {
   list[x + (y * width)] = value;
 }
 
-double Matrix::getDeterminant() {
+long double Matrix::getDeterminant() {
   for (unsigned int i = 0; i < width; i++) {
-    double pivot = get(i, i);
-    for (unsigned int j = 0; j < width; j++) {
-      if (i == j) continue;
-      for (unsigned int k = i + 1; k < width; k++) {
-        double divider = i == 0 ? 1 : get(i - 1, i - 1);
-        double a = pivot * get(j, k);
-        double b = get(j, i) * get(i, k);
-        set(j, k, (a - b) / divider);
+    if (get(i, i) == 0) throw std::exception("Division by zero");
+    for (unsigned int j = i + 1; j < width; j++) {
+      double ratio = get(j, i) / get(i, i);
+      for (unsigned int k = 0; k < width; k++) {
+        double res = get(j, k) - ratio * get(i, k);
+        set(j, k, res);
       }
     }
   }
 
-  return get(width - 1, width - 1);
+  long double det = 1.0;
+  for (unsigned int i = 0; i < width; i++) {
+    det *= get(i, i);
+  }
+
+  return det;
 }
 
 std::ostream& operator<<(std::ostream &os, Matrix& mtx) {

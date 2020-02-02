@@ -37,7 +37,7 @@ void parse_line(Matrix& mtx, const std::string& line, int& line_length) {
   }
 }
 
-double matrix_from_std() {
+long double matrix_from_std() {
   Matrix mtx;
   std::string line;
   int line_length = -1;
@@ -48,7 +48,7 @@ double matrix_from_std() {
   return mtx.getDeterminant();
 }
 
-double matrix_from_file(const std::string name) {
+long double matrix_from_file(const std::string name) {
   std::ifstream file;
   std::string line;
   Matrix mtx;
@@ -119,7 +119,7 @@ int main(unsigned int argc, char* argv[]) {
     }
 
     if (inp == nullptr) {
-      double det = matrix_from_std();
+      long double det = matrix_from_std();
       if (thread_mode != 2) {
         if (!res_only) *outs << "(1) ";
         *outs << det;
@@ -128,7 +128,7 @@ int main(unsigned int argc, char* argv[]) {
       }
     } else {
       std::string filename = "";
-      std::vector<std::future<double>> futures;
+      std::vector<std::future<long double>> futures;
       long long multi_time;
       long long single_time;
 
@@ -149,12 +149,12 @@ int main(unsigned int argc, char* argv[]) {
         }
 
         for (unsigned int i = 0; i < futures.size(); i++) {
-          if (!res_only && thread_mode != 2) *outs << "(" << i + 1 << ") ";
+          if (!res_only) *outs << "(" << i + 1 << ") ";
           try {
-            double res = futures[i].get();
-            if (thread_mode != 2) *outs << res << "\n";
+            long double res = futures[i].get();
+            *outs << res << "\n";
           } catch (const std::exception& e) {
-            if (thread_mode != 2) *errs << e.what() << "\n";
+            *errs << e.what() << "\n";
           }
         }
         multi_time = get_milis(std::chrono::high_resolution_clock::now() - start).count();
@@ -171,7 +171,7 @@ int main(unsigned int argc, char* argv[]) {
             if (filename.size() == 0) throw std::exception("Invalid filename");
             if (!res_only && thread_mode != 2) *outs << "(" << ++count << ") ";
             try {
-              double res = matrix_from_file(filename);
+              long double res = matrix_from_file(filename);
               if (thread_mode != 2) *outs << res << "\n";
             } catch (const std::exception& e) {
               if (thread_mode != 2) *errs << e.what() << "\n";
@@ -183,7 +183,7 @@ int main(unsigned int argc, char* argv[]) {
         if (filename.size() != 0) {
           if (!res_only && thread_mode != 2) *outs << "(" << ++count << ") ";
           try {
-            double res = matrix_from_file(filename);
+            long double res = matrix_from_file(filename);
             if (thread_mode != 2) *outs << res << "\n";
           } catch (const std::exception& e) {
             if (thread_mode != 2) *errs << e.what() << "\n";
@@ -193,8 +193,9 @@ int main(unsigned int argc, char* argv[]) {
       }
 
       if (thread_mode == 2) {
-        *outs << "Multi-threaded: " << multi_time << " ms\n";
-        *outs << "Single-threaded: " << single_time << " ms\n";
+        *outs << "------------------------------------\nPerformance:\n";
+        *outs << "  - Multi-threaded: " << multi_time << " ms\n";
+        *outs << "  - Single-threaded: " << single_time << " ms\n";
       }
 
       outfile.close();

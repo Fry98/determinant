@@ -12,5 +12,5 @@ class Matrix {
     void setWidth(unsigned int width);
     bool isSquare();
     double get(unsigned int x, unsigned int y);
-    double getDeterminant();
+    long double getDeterminant();
 };
